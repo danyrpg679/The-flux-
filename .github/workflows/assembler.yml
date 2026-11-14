@@ -1,0 +1,35 @@
+name: Assembler seulement
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: "Numero du rendu termine (dans l'adresse de la page : .../actions/runs/NUMERO)"
+
+jobs:
+  assembler:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: acte-*
+          merge-multiple: true
+          path: actes
+          run-id: ${{ inputs.run_id }}
+          github-token: ${{ github.token }}
+      - name: Installer ffmpeg
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+      - name: Assembler
+        run: |
+          cd actes
+          for i in 1 2 3 4 5; do echo "file 'acte$i.mp4'"; done > list.txt
+          ffmpeg -y -loglevel error -f concat -safe 0 -i list.txt -c:v copy -c:a aac -b:a 192k the-flux-trailer.mp4
+      - uses: actions/upload-artifact@v4
+        with:
+          name: THE-FLUX-TRAILER-FINAL
+          path: actes/the-flux-trailer.mp4
